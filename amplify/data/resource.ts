@@ -1,18 +1,34 @@
-import { type ClientSchema, a, defineData } from "@aws-amplify/backend";
+import type { ClientSchema } from "@aws-amplify/backend";
+import { a, defineData } from "@aws-amplify/backend";
+import { addUserToGroup } from "./add-user-to-group/resource";
 
-/*== STEP 1 ===============================================================
-The section below creates a Todo database table with a "content" field. Try
-adding a new "isDone" field as a boolean. The authorization rule below
-specifies that any user authenticated via an API key can "create", "read",
-"update", and "delete" any "Todo" records.
-=========================================================================*/
 const schema = a.schema({
-  Todo: a
-    .model({
-      content: a.string(),
-      isDone: a.boolean()
-})
-.authorization(allow => [allow.owner()])
+  addUserToGroup: a
+    .mutation()
+    .arguments({
+      userId: a.string().required(),
+      groupName: a.string().required(),
+    })
+    .authorization((allow) => [allow.groups(["ADMINS"])])
+    .handler(a.handler.function(addUserToGroup))
+    .returns(a.json()),
+
+  Article: a.model({
+    title: a.string(),   // 🔥 Added fields
+    content: a.string()
+  }).authorization(allow => [
+    allow.groups(["EDITORS"]).to(["read", "update"]),
+    allow.groups(["ADMINS"]).to(["create", "read", "update", "delete"]),
+    allow.owner().to(["read", "update", "delete"])
+  ]),
+
+  Todo: a.model({
+    content: a.string(),
+    isDone: a.boolean()
+  }).authorization(allow => [
+    allow.publicApiKey().to(["create"]),
+    allow.owner().to(["read", "update", "delete"])
+  ])
 });
 
 export type Schema = ClientSchema<typeof schema>;
@@ -20,14 +36,12 @@ export type Schema = ClientSchema<typeof schema>;
 export const data = defineData({
   schema,
   authorizationModes: {
-    defaultAuthorizationMode: 'userPool',
+    defaultAuthorizationMode: "iam",
     apiKeyAuthorizationMode: {
       expiresInDays: 30,
     },
-    // API Key is used for a.allow.public() rules
   },
 });
-
 /*== STEP 2 ===============================================================
 Go to your frontend source code. From your client-side code, generate a
 Data client to make CRUDL requests to your table. (THIS SNIPPET WILL ONLY
