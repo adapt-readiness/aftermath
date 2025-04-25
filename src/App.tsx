@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import type { Schema } from "../amplify/data/resource";
 import { useAuthenticator } from '@aws-amplify/ui-react';
 import { generateClient } from "aws-amplify/data";
+import { FileUploader } from '@aws-amplify/ui-react-storage';
+import '@aws-amplify/ui-react/styles.css';
 
 const client = generateClient<Schema>();
 
@@ -30,10 +32,23 @@ function App() {
       <button onClick={createTodo}>+ new</button>
       <ul>
         {todos.map((todo) => (
-          <li           onClick={() => deleteTodo(todo.id)}
-          key={todo.id}>{todo.content}</li>
+          <li onClick={() => deleteTodo(todo.id)} key={todo.id}>
+            {todo.content}
+          </li>
         ))}
       </ul>
+
+      {/* 🔽 FileUploader inserted here */}
+      <section style={{ marginTop: '2rem' }}>
+        <h2>Upload an image</h2>
+        <FileUploader
+          acceptedFileTypes={['image/*']}
+          path="public/"
+          maxFileCount={1}
+          isResumable
+        />
+      </section>
+
       <div>
         🥳 App successfully hosted. Try creating a new todo.
         <br />
